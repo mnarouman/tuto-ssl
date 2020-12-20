@@ -126,7 +126,7 @@ public class SimpleServer {
 				System.out.println("############## SERVER : get the client response...");
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				String clientName = in.readLine();
-				System.out.println("############## SERVER : Hello " + clientName + ", i  am the Server!");
+				System.out.println("############## SERVER : Hello " + clientName + ", i am the Server !");
 				
 			} catch (SSLHandshakeException exception) {
 				System.err.println("############## START SERVER ERROR : Output expected SSLHandshakeExceptions");

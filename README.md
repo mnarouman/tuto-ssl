@@ -1,6 +1,6 @@
 # tuto-ssl
 
-A brief tuto to explain ssl by example
+A brief tuto to explain ssl by example. A very simple program to see some SSL errors ans anderstand them.
 
 SSL Exchange messages :
 
@@ -36,54 +36,61 @@ SSL Exchange messages :
 
 
 
-First, create some certificats:
+Create some certificats for the server and the client:
 
 - The server 
 
   - Creating a keystore server with a self-signed certificate:
 
-```
+   ```
 keytool -genkey -keyalg RSA -keypass password -storepass password -keystore jks.server.keystore -alias serveur
-```
-
-N.B.: Be careful to fill in the name of the machine as CN	 (ie localhost)
+   ```
+    N.B. : Be careful to fill in the name of the machine as CN (for example localhost)
 
   - Extracting the keystore server certificate:
 
-```
-keytool -export -storepass password -keystore jks.server.keystore -file serveur.cer -alias serveur
-```
+   ```
+  keytool -export -storepass password -keystore jks.server.keystore -file serveur.cer -alias serveur
+   ```
+  
+  - Adding the server certificate to the client truststore (the client knows the server):
+  
+   ```
+  keytool -import -v -trustcacerts -keypass password -storepass password -file serveur.cer -keystore jks.client.truststore -alias serveur
+   ```
 
-  - Adding the server certificate to the client truststore:
-
-
-```
-keytool -import -v -trustcacerts -keypass password -storepass password -file serveur.cer -keystore jks.client.truststore -alias serveur
-```
 
 
 
 - The Client:
   - Creating a client keystore with a self-signed certificate:
 
-```
-keytool -genkey -keyalg RSA -keypass password -storepass password -keystore jks.client.keystore -alias client
-```
+   ```
+  keytool -genkey -keyalg RSA -keypass password -storepass password -keystore jks.client.keystore -alias client
+   ```
+  
   - Extracting the client keystore certificate:
-```
-keytool -export -storepass password -keystore jks.client.keystore -file client.cer -alias client
-```
-  - Adding the client certificate to the truststore server:
-```
-keytool -import -v -trustcacerts -keypass password -storepass password -file client.cer -keystore jks.server.truststore -alias client
-```
+  
+   ```
+  keytool -export -storepass password -keystore jks.client.keystore -file client.cer -alias client
+   ```
+  
+  - Adding the client certificate to the server truststore (the server knows the client) :
+  
+   ```
+  keytool -import -v -trustcacerts -keypass password -storepass password -file client.cer -keystore jks.server.truststore -alias client
+   ```
+
+
 
 2 java classes :
 
 - ssl.SimpleServer : an ssl server
 - ssl.SimpleClient : the client
 
-Launch the server :
+
+
+**Launch the server :**
 
 Usage : java ssl.SimpleServer [clientAuthentication] [knownClient] [certificatPath] [debugEnable]
 
@@ -97,7 +104,7 @@ Usage : java ssl.SimpleServer [clientAuthentication] [knownClient] [certificatPa
 
 
 
-Launch the client:
+**Launch the client:**
 
 Usage : java ssl.SimpleClient [knownClient] [certificatPath] [debugEnable]
 
@@ -109,7 +116,9 @@ Usage : java ssl.SimpleClient [knownClient] [certificatPath] [debugEnable]
 
 
 
+Change the parameters (*clientAuthentication*, *knownClient* and *knownServer*) to simulate ssl errors.
 
+Activate the debug mode to see the SSL Exchange messages.
 
 | Need client authentication (*clientAuthentication)* | Server  knows Client (*knownClient*) | Client  knows Server (*knownServer*) | Result                                                       |
 | --------------------------------------------------- | ------------------------------------ | ------------------------------------ | ------------------------------------------------------------ |
@@ -121,3 +130,106 @@ Usage : java ssl.SimpleClient [knownClient] [certificatPath] [debugEnable]
 | Yes                                                 | No                                   | Yes                                  | KO :   <br/>-       Server : null cert chain  <br/>-       Client : Software caused connection abort:  socket write error |
 | Yes                                                 | Yes                                  | No                                   | KO :   <br/>-       Server : Received fatal alert:  certificate_unknown  <br/>-       Client : unable to find valid certification  path to requested target |
 | Yes                                                 | Yes                                  | Yes                                  | OK                                                           |
+
+We launch the server and the client in the directory where the certificates are located.
+
+Let's try to put ourselves in the second case :
+
+The server:
+
+```
+$ java ssl.SimpleServer false false
+```
+
+```
+clientAuthentication : false
+knownClient : false
+Current certificats path is : W:\security\ssl\ssl\target\classes\.\
+Debug enable is false
+############## SERVER : SSLServerSocketFactory.getDefault()...
+############## SERVER : factory initialized...
+############## Set the SERVER SSLServerSocket...
+############## SERVER SSLServerSocket ok
+############## SERVER : get the client response...
+############## SERVER : Hello Client, i am the Server !
+```
+
+The Client
+
+```
+$ java ssl.SimpleClient true
+```
+
+```
+knownServer : true
+Current certificats path is : W:\security\ssl\ssl\target\classes\.\
+Debug enable is false
+############## CLIENT SocketFactory.getDefault()...
+############## CLIENT factory initialized...
+############## Set the CLIENT SSLSocket...
+############## CLIENT SSLSocket OK
+############## Print CLIENT to the output...
+############## CLIENT output OK!
+```
+
+All it's ok. Let's try the first case.
+
+The server
+
+```
+$ java ssl.SimpleServer false false
+```
+
+```
+clientAuthentication : false
+knownClient : false
+Current certificats path is : W:\security\ssl\ssl\target\classes\.\
+Debug enable is false
+############## SERVER : SSLServerSocketFactory.getDefault()...
+############## SERVER : factory initialized...
+############## Set the SERVER SSLServerSocket...
+############## SERVER SSLServerSocket ok
+############## SERVER : get the client response...
+############## START SERVER ERROR : Output expected SSLHandshakeExceptions
+javax.net.ssl.SSLHandshakeException: Received fatal alert: certificate_unknown
+        at java.base/sun.security.ssl.Alert.createSSLException(Alert.java:131)
+        ...
+        at ssl.SimpleServer.main(SimpleServer.java:23)
+############## END SERVER ERROR : Output expected SSLHandshakeExceptions
+```
+
+The Client
+
+```
+$ java ssl.SimpleClient false
+```
+
+```
+knownServer : false
+Current certificats path is : W:\security\ssl\ssl\target\classes\.\
+Debug enable is false
+############## CLIENT SocketFactory.getDefault()...
+############## CLIENT factory initialized...
+############## Set the CLIENT SSLSocket...
+############## CLIENT SSLSocket OK
+############## Print CLIENT to the output...
+############## CLIENT output OK!
+############## START CLIENT ERROR : Output expected SSLHandshakeExceptions
+javax.net.ssl.SSLHandshakeException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+        at java.base/sun.security.ssl.Alert.createSSLException(Alert.java:131)
+        ...
+        at ssl.SimpleClient.main(SimpleClient.java:21)
+Caused by: sun.security.validator.ValidatorException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+        at java.base/sun.security.validator.PKIXValidator.doBuild(PKIXValidator.java:384)
+        ...
+        ... 18 more
+Caused by: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+        ...
+        at java.base/sun.security.validator.PKIXValidator.doBuild(PKIXValidator.java:379)
+        ... 23 more
+############## END CLIENT ERROR : Output expected SSLHandshakeExceptions
+```
+
+The server certificate is unknown from the client
+
+That's all folks !
