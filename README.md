@@ -42,52 +42,47 @@ Create some certificats for the server and the client:
 
   - Creating a keystore server with a self-signed certificate:
 
-   ```
-keytool -genkey -keyalg RSA -keypass password -storepass password -keystore jks.server.keystore -alias serveur
-   ```
+  ```
+  keytool -genkey -keyalg RSA -keypass password -storepass password -keystore jks.server.keystore -alias serveur
+  ```
+
     N.B. : Be careful to fill in the name of the machine as CN (for example localhost)
 
   - Extracting the keystore server certificate:
 
-   ```
+  ```
   keytool -export -storepass password -keystore jks.server.keystore -file serveur.cer -alias serveur
-   ```
+  ```
   
   - Adding the server certificate to the client truststore (the client knows the server):
   
-   ```
+  ```
   keytool -import -v -trustcacerts -keypass password -storepass password -file serveur.cer -keystore jks.client.truststore -alias serveur
-   ```
-
-
-
+  ```
 
 - The Client:
   - Creating a client keystore with a self-signed certificate:
 
-   ```
+  ```
   keytool -genkey -keyalg RSA -keypass password -storepass password -keystore jks.client.keystore -alias client
-   ```
+  ```
   
   - Extracting the client keystore certificate:
   
-   ```
+  ```
   keytool -export -storepass password -keystore jks.client.keystore -file client.cer -alias client
-   ```
+  ```
   
   - Adding the client certificate to the server truststore (the server knows the client) :
   
-   ```
+  ```
   keytool -import -v -trustcacerts -keypass password -storepass password -file client.cer -keystore jks.server.truststore -alias client
-   ```
-
-
+  ```
 
 2 java classes :
 
 - ssl.SimpleServer : an ssl server
 - ssl.SimpleClient : the client
-
 
 
 **Launch the server :**
