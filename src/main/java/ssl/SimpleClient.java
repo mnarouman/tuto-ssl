@@ -3,10 +3,11 @@ package ssl;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
 
 import javax.net.SocketFactory;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -31,7 +32,7 @@ public class SimpleClient {
 			knownServer = getBoolean(args[0]);
 			System.out.println("knownServer : "+ knownServer);
 		} catch (Exception e) {
-			System.err.println("Erreur sur knownServer");
+			System.err.println("Error on knownServer");
 			usage();
 		}
 		
@@ -42,7 +43,7 @@ public class SimpleClient {
 			if (certificatsPath.exists()) {
 				rootResources = certificatsPath.getAbsolutePath();
 			} else {
-				System.err.println("Le repertoire "+ args[2] + " n'existe pas");
+				System.err.println("The directory "+ args[2] + " does not exists");
 				usage();
 			}
 		} else {
@@ -64,6 +65,7 @@ public class SimpleClient {
 		System.setProperty("javax.net.ssl.keyStore", rootResources + "jks.client.keystore");
 		System.setProperty("javax.net.ssl.keyStorePassword", "password");
 
+		// Does the CLient knows the Sever ?
 		if (knownServer) {
 			System.setProperty("javax.net.ssl.trustStore", rootResources + "jks.client.truststore");
 			System.setProperty("javax.net.ssl.trustStorePassword", "password");
@@ -76,10 +78,10 @@ public class SimpleClient {
 	}
 
 	private static void usage() {
-		System.err.println("Usage : java SimpleClient.class clientAuthentication knownClient certificatPath debugEnable");
-		System.err.println(" knownServer (true/false) : Est-ce que le client connait le server ?");
-		System.err.println(" certificatPath (String) : Chemin des keystores (default : .");
-		System.err.println(" debugEnable (true/false) : activer le debug (default : false");
+		System.err.println("Usage : java ssl.SimpleClient [knownClient] [certificatPath] [debugEnable]");
+		System.err.println("- knownServer (true/false) 	: The client knows the server ? (mandatory)");
+		System.err.println("- certificatPath (String) 	: keystores path (default : .)");
+		System.err.println("- debugEnable (true/false) 	: debug enable (default : false)");
 		System.exit(1);
 	}
 	
@@ -94,27 +96,43 @@ public class SimpleClient {
 	}
 
 	static void startClient(String host, int port) throws IOException {
+		System.out.println("############## CLIENT SocketFactory.getDefault()...");
 		SocketFactory factory = SSLSocketFactory.getDefault();
+		System.out.println("############## CLIENT factory initialized...");
 
 		try (Socket connection = factory.createSocket(host, port)) {
 			if (IS_DEBUG_ENABLE) {
 				sslInfos(connection);
 			}
+			
+			System.out.println("############## Set the CLIENT SSLSocket...");
 			((SSLSocket) connection).setEnabledCipherSuites(new String[] { "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384"});
 			((SSLSocket) connection).setEnabledProtocols(new String[] { "TLSv1.2" });
 			SSLParameters sslParams = new SSLParameters();
 			sslParams.setEndpointIdentificationAlgorithm("HTTPS");
 			((SSLSocket) connection).setSSLParameters(sslParams);
+			System.out.println("############## CLIENT SSLSocket OK");
 			
 			OutputStream outputStream = ((SSLSocket) connection).getOutputStream();
-			PrintWriter out = new PrintWriter(outputStream, true);
-			out.println("Client1");
-
-		}
+			try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream)){
+				System.out.println("############## Print CLIENT to the output...");
+				outputStreamWriter.write("Client");
+				System.out.println("############## CLIENT output OK!");
+			}
+			
+		}catch (SSLHandshakeException exception) {
+			System.err.println("############## START CLIENT ERROR : Output expected SSLHandshakeExceptions");
+            exception.printStackTrace();
+            System.err.println("############## END CLIENT ERROR : Output expected SSLHandshakeExceptions");
+        } catch (IOException exception) {
+        	System.err.println("############## START CLIENT ERROR : Output unexpected InterruptedExceptions and IOExceptions");
+        	exception.printStackTrace();
+        	System.err.println("############## END CLIENT ERROR : Output unexpected InterruptedExceptions and IOExceptions");
+        }
 	}
 
 	private static void sslInfos(Socket connection) {
-		System.out.println();
+		System.out.println("############## START CLIENT SSL INFOS ###############");
 		System.out.println("Ciphers suite enable");
 		String[] enabledCipherSuites = ((SSLSocket) connection).getEnabledCipherSuites();
 		for (String cipher : enabledCipherSuites) {
@@ -127,7 +145,6 @@ public class SimpleClient {
 		for (String protocol : enabledProtocols) {
 			System.out.println(protocol);	
 		}
-		System.out.println();
+		System.out.println("############## END CLIENT SSL INFOS ###############");
 	}
-
 }
