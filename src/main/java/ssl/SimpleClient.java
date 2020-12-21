@@ -75,6 +75,26 @@ public class SimpleClient {
 			System.setProperty("javax.net.debug", "ssl:all");
 			System.setProperty("java.security.debug", "access:stack");
 		}
+		
+		// JAVA_HOME
+		System.out.println("La valeur de java.home est :" + System.getProperty("java.home"));
+		
+		// JSSE
+		try {
+			Class.forName("com.sun.net.ssl.internal.ssl.Provider");
+			System.out.println("JSSE est correctement installe !");
+		} catch (Exception e) {
+			System.out.println("JSSE n est pas installe correctement !");
+		}
+		
+		// TRUSTSTORE
+		String trustStore = System.getProperty("javax.net.ssl.trustStore");
+		if (trustStore == null) {
+			System.out.println("javax.net.ssl.trustStore n est pas defini.");
+		} else {
+			System.out.println("javax.net.ssl.trustStore = " + trustStore);
+		}
+
 	}
 
 	private static void usage() {
